@@ -26,20 +26,24 @@ def sample(rng, best):
     p = copy.deepcopy(best)
     def pick(key, choices): p[key] = rng.choice(choices)
     k = rng.randint(1, 4)
-    knobs = ["hands","land_days","cow","sheep","goose","crops","feed_float","seed","buffers","sell","fert","carry","hands_by_day","floor","floor","floor","floor"]
+    knobs = ["hands","land_days","cow","sheep","goose","crops","feed_float","seed","buffers","sell","fert","carry","hands_by_day","floor","floor","layout","layout","crops","crops","land_days"]
     for kn in rng.sample(knobs, k):
         if kn == "hands": pick("hands", [7,8,9,10,11,12,13])
         elif kn == "hands_by_day":
             p.pop("hands", None); p["hands_by_day"] = [(0, rng.choice([3,5,7])), (rng.choice([3,5,7]), rng.choice([8,10,12])), (rng.choice([9,11,13]), rng.choice([10,12,14]))]
-        elif kn == "land_days": p["land_days"] = sorted(rng.sample(range(2, 16), rng.choice([1,2,3])))
+        elif kn == "land_days": p["land_days"] = sorted(rng.sample(range(2, 16), rng.choice([1,2,3,3])))
         elif kn in ("cow","sheep"):
             p["animal_target"] = dict(p["animal_target"]); p["animal_target"]["COW" if kn=="cow" else "SHEEP"] = rng.choice([0,3,5,8,10,12,14])
         elif kn == "goose":
-            n = rng.choice([0,6,10,16,24]); p["animal_target"] = dict(p["animal_target"]); p["animal_target"]["GOOSE"] = n
+            n = rng.choice([0, 4, 6, 8, 12]); p["animal_target"] = dict(p["animal_target"]); p["animal_target"]["GOOSE"] = n
             p["animals"] = ["COW","SHEEP","GOOSE"] if n else ["COW","SHEEP"]
-            tot = sum(p["animal_target"].values())
-            p["build"] = [{"kind":"PASTURE","target":p["animal_target"].get("COW",0)+p["animal_target"].get("SHEEP",0)+2,"share":0.5,"from_day":0,"until_day":20}] + ([{"kind":"COOP","target":n,"share":0.4,"from_day":0,"until_day":20}] if n else [])
-            p["sell_order"] = ["EGG"] + [x for x in p["sell_order"] if x != "EGG"]
+            past = rng.choice([0.25, 0.3, 0.4]); coop = rng.choice([0.1, 0.15, 0.2])
+            p["build"] = [{"kind":"PASTURE","target":p["animal_target"].get("COW",0)+p["animal_target"].get("SHEEP",0)+2,"share":past,"from_day":0,"until_day":20}] + ([{"kind":"COOP","target":n+1,"share":coop,"from_day":0,"until_day":20}] if n else [])
+            if n: p["sell_order"] = ["EGG"] + [x for x in p["sell_order"] if x != "EGG"]
+        elif kn == "layout":
+            p["build"] = [dict(b) for b in p["build"]]
+            for b in p["build"]:
+                b["share"] = rng.choice([0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5]) if b["kind"] == "PASTURE" else rng.choice([0.1, 0.15, 0.2, 0.3])
         elif kn == "crops":
             opts = [["WHEAT"], ["WHEAT","STRAWBERRY"], ["WHEAT","MELON"], ["WHEAT","STRAWBERRY","MELON"], ["WHEAT","TOMATO"], ["WHEAT","CARROT"], ["WHEAT","STRAWBERRY","TOMATO"]]
             c = rng.choice(opts); p["crops"] = c
