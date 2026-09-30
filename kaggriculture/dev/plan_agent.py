@@ -505,6 +505,40 @@ def _plan_market(obs, policy, me, priv, animal_count):
     return orders[:policy.get("max_orders", 10)]
 
 
+
+import math as _math
+_I0 = 10000
+_MPX = {
+    "WHEAT": (25, 400, "sqrt", 0.80, "log", 0.20), "CARROT": (35, 450, "hinge", 1.0, "sqrt", 0.70),
+    "TOMATO": (60, 200, "hinge", 0.40, "sqrt", 0.60), "STRAWBERRY": (120, 100, "sqrt", 0.70, "linear", 1.60),
+    "MELON": (250, 300, "log", 0.20, "sq", 3.60), "EGG": (50, 332, "hinge", 0.40, "log", 0.20),
+    "MILK": (160, 122, "sqrt", 0.60, "linear", 1.60), "WOOL": (200, 105, "log", 0.20, "sq", 3.20),
+    "FERTILIZER": (100, 200, "linear", 0.40, "linear", 0.40)}
+
+
+def _shp(f, x, T):
+    x = max(0.0, x)
+    if f == "linear":
+        return x
+    if f == "sq":
+        return x * x
+    if f == "sqrt":
+        return _math.sqrt(x)
+    if f == "log":
+        return _math.log(1 + x)
+    u = x / T
+    return u + 8.0 * max(0.0, u - 1.0) ** 2
+
+
+def _px(item, inv):
+    base, T, bf, bt, af, at = _MPX[item]
+    if inv < _I0:
+        v = base + bt * base / _shp(bf, T, T) * _shp(bf, _I0 - inv, T)
+    else:
+        v = base - at * base / _shp(af, T, T) * _shp(af, inv - _I0, T)
+    return max(1, round(v))
+
+
 def _plan_sells(obs, policy, priv, animal_count, phase):
     """Sell orders for this turn.
 
@@ -545,6 +579,14 @@ def _plan_sells(obs, policy, priv, animal_count, phase):
         if not pressure and prices.get(item, 0) < floors.get(item, 0):
             continue
         n = min(have, chunk)
+        frac = policy.get("floor_frac", {}).get(item)
+        if frac is not None and not pressure and item in _MPX:
+            inv = int((obs.get("market", {}).get("inventory", {}) or {}).get(item, _I0))
+            limit = frac * _MPX[item][0]
+            k = 0
+            while k < n and _px(item, inv + k) >= limit:
+                k += 1
+            n = k
         if n > 0:
             out.append(["SELL", item, n])
     return out

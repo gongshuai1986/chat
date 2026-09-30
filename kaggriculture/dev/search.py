@@ -26,7 +26,7 @@ def sample(rng, best):
     p = copy.deepcopy(best)
     def pick(key, choices): p[key] = rng.choice(choices)
     k = rng.randint(1, 4)
-    knobs = ["hands","land_days","cow","sheep","goose","crops","feed_float","seed","buffers","sell","fert","carry","hands_by_day"]
+    knobs = ["hands","land_days","cow","sheep","goose","crops","feed_float","seed","buffers","sell","fert","carry","hands_by_day","floor","floor","floor","floor"]
     for kn in rng.sample(knobs, k):
         if kn == "hands": pick("hands", [7,8,9,10,11,12,13])
         elif kn == "hands_by_day":
@@ -35,7 +35,7 @@ def sample(rng, best):
         elif kn in ("cow","sheep"):
             p["animal_target"] = dict(p["animal_target"]); p["animal_target"]["COW" if kn=="cow" else "SHEEP"] = rng.choice([0,3,5,8,10,12,14])
         elif kn == "goose":
-            n = rng.choice([0,4,8,12]); p["animal_target"] = dict(p["animal_target"]); p["animal_target"]["GOOSE"] = n
+            n = rng.choice([0,6,10,16,24]); p["animal_target"] = dict(p["animal_target"]); p["animal_target"]["GOOSE"] = n
             p["animals"] = ["COW","SHEEP","GOOSE"] if n else ["COW","SHEEP"]
             tot = sum(p["animal_target"].values())
             p["build"] = [{"kind":"PASTURE","target":p["animal_target"].get("COW",0)+p["animal_target"].get("SHEEP",0)+2,"share":0.5,"from_day":0,"until_day":20}] + ([{"kind":"COOP","target":n,"share":0.4,"from_day":0,"until_day":20}] if n else [])
